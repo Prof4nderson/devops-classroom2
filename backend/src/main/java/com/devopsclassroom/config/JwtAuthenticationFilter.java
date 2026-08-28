@@ -28,10 +28,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     // 💡 Evita reprocessar ou travar chamadas de Login/Cadastro/WebSocket
+
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getServletPath();
-        // Apenas login e registro devem ignorar o token; as demais rotas abaixo de /api/auth/ precisam passar pelo filtro
+        // Libera estritamente apenas o login e o registro do filtro de token
         return path.equals("/api/auth/login") || path.equals("/api/auth/register") || path.startsWith("/ws/");
     }
 
