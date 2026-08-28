@@ -50,7 +50,7 @@ public class MensagemController {
                 Long usuarioId = usuarioOpt.get().getId();
 
                 Mensagem mensagemSalva = mensagemService.criarMensagem(request, usuarioId);
-                messagingTemplate.convertAndSend("/topic/chat/" + aulaId, mensagemSalva);
+                messagingTemplate.convertAndSend("/topic/chat/" + aulaId, mensagemService.montarResposta(mensagemSalva));
 
                 // 2. 🤖 GATILHO DO @CODER: Se a mensagem contiver "@Coder"
                 if (request.getConteudo() != null && request.getConteudo().contains("@Coder")) {
@@ -76,7 +76,7 @@ public class MensagemController {
                     reqBot.setAulaId(aulaId);
 
                     Mensagem mensagemBot = mensagemService.criarMensagem(reqBot, usuarioAi.getId());
-                    messagingTemplate.convertAndSend("/topic/chat/" + aulaId, mensagemBot);
+                    messagingTemplate.convertAndSend("/topic/chat/" + aulaId, mensagemService.montarResposta(mensagemBot));
                 }
             }
         }

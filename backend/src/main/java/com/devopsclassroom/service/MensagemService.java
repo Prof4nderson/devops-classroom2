@@ -1,6 +1,7 @@
 package com.devopsclassroom.service;
 
 import com.devopsclassroom.dto.MensagemRequest;
+import com.devopsclassroom.dto.MensagemResponse;
 import com.devopsclassroom.entity.*;
 import com.devopsclassroom.repository.AulaRepository;
 import com.devopsclassroom.repository.MensagemRepository;
@@ -55,5 +56,25 @@ public class MensagemService {
 
     public List<Mensagem> listarMensagensDaAula(Long aulaId) {
         return mensagemRepository.findByAulaIdOrderByCriadoEmAsc(aulaId);
+    }
+
+    /** Converte para DTO plano, resolvendo o autor e a mensagem respondida. */
+    @Transactional(readOnly = true)
+    public MensagemResponse montarResposta(Mensagem mensagem) {
+        Mensagem origem = null;
+        if (mensagem.getReplyToId() != null) {
+            origem = mensagemRepository.findById(mensagem.getReplyToId()).orElse(null);
+        }
+        return MensagemResponse.fromEntity(mensagem, origem);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MensagemResponse> listarRespostasDaAula(Long aulaId) {
+        List<Mensagem> mensagens = mensagemRepository.findByAulaIdOrderByCriadoEmAsc(aulaId);
+        java.util.Map<Long, Mensagem> porId = new java.util.HashMap<>();
+        mensagens.forEach(m -> porId.put(m.getId(), m));
+        return mensagens.stream()
+                .map(m -> MensagemResponse.fromEntity(m, m.getReplyToId() != null ? porId.get(m.getReplyToId()) : null))
+                .toList();
     }
 }

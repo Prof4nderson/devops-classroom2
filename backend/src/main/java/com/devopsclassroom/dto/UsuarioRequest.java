@@ -27,6 +27,11 @@ public class UsuarioRequest {
 
     private String bio;
 
+    // Vínculo acadêmico escolhido no cadastro do aluno
+    private Long instituicaoId;
+    private Long cursoId;
+    private Long turmaId;
+
     // Getters and Setters
     public String getLogin() { return login; }
     public void setLogin(String login) { this.login = login; }
@@ -44,4 +49,10 @@ public class UsuarioRequest {
     public void setInstituicao(String instituicao) { this.instituicao = instituicao; }
     public String getBio() { return bio; }
     public void setBio(String bio) { this.bio = bio; }
+    public Long getInstituicaoId() { return instituicaoId; }
+    public void setInstituicaoId(Long instituicaoId) { this.instituicaoId = instituicaoId; }
+    public Long getCursoId() { return cursoId; }
+    public void setCursoId(Long cursoId) { this.cursoId = cursoId; }
+    public Long getTurmaId() { return turmaId; }
+    public void setTurmaId(Long turmaId) { this.turmaId = turmaId; }
 }

@@ -11,6 +11,7 @@ import com.devopsclassroom.entity.StatusMatricula;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 import com.devopsclassroom.service.AulaService;
+import com.devopsclassroom.service.MensagemService;
 import com.devopsclassroom.service.PresencaService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -26,12 +27,14 @@ public class AulaController {
     private final AulaService aulaService;
     private final PresencaService presencaService;
     private final MatriculaRepository matriculaRepository;
+    private final MensagemService mensagemService;
 
-    public AulaController(AulaService aulaService, PresencaService presencaService, MensagemRepository mensagemRepository, MatriculaRepository matriculaRepository) {
+    public AulaController(AulaService aulaService, PresencaService presencaService, MensagemRepository mensagemRepository, MatriculaRepository matriculaRepository, MensagemService mensagemService) {
         this.aulaService = aulaService;
         this.presencaService = presencaService;
         this.mensagemRepository = mensagemRepository;
         this.matriculaRepository = matriculaRepository;
+        this.mensagemService = mensagemService;
     }
 
     private void exigirProfessor(Authentication auth) {
@@ -102,11 +105,10 @@ public class AulaController {
                 .toList());
     }
     @GetMapping("/{aulaId}/mensagens")
-    public ResponseEntity<List<Mensagem>> listarMensagensDaAula(@PathVariable Long aulaId, Authentication auth) {
+    public ResponseEntity<List<com.devopsclassroom.dto.MensagemResponse>> listarMensagensDaAula(@PathVariable Long aulaId, Authentication auth) {
         Aula aula = aulaService.buscarAula(aulaId);
         exigirAcesso(aula, auth);
-        List<Mensagem> mensagens = mensagemRepository.findByAulaIdOrderByCriadoEmAsc(aulaId);
-        return ResponseEntity.ok(mensagens);
+        return ResponseEntity.ok(mensagemService.listarRespostasDaAula(aulaId));
     }
     @GetMapping("/{aulaId}/presenca-verificar")
     public ResponseEntity<Boolean> verificarPresenca(@PathVariable Long aulaId, Authentication auth) {

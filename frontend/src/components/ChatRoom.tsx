@@ -450,12 +450,15 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ aula, user, onLeave }) => {
 
                   {msg.replyToId && (() => {
                     const origem = messages.find((item) => item.id === msg.replyToId);
-                    return origem ? (
+                    const nomeOrigem = msg.replyToNome || origem?.usuarioNome;
+                    const textoOrigem = msg.replyToConteudo ?? origem?.conteudo;
+                    if (!nomeOrigem && !textoOrigem) return null;
+                    return (
                       <div className="mb-2 rounded-lg border-l-2 border-cyan-300/60 bg-black/20 px-2 py-1 text-xs text-cyan-100/80">
-                        <span className="font-semibold">Respondendo a {origem.usuarioNome || 'usuário'}:</span>{' '}
-                        {origem.conteudo.slice(0, 120)}
+                        <span className="font-semibold">Respondendo a {nomeOrigem || 'usuário'}:</span>{' '}
+                        {(textoOrigem || '').slice(0, 120)}
                       </div>
-                    ) : null;
+                    );
                   })()}
                   <p className="text-sm whitespace-pre-wrap">{msg.conteudo}</p>
                   <button

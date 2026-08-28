@@ -51,6 +51,8 @@ export interface Mensagem {
   mimeType: string;
   criadoEm: string;
   replyToId?: number | null;
+  replyToNome?: string | null;
+  replyToConteudo?: string | null;
 }
 
 export interface Quiz {
@@ -94,6 +96,8 @@ export interface ChatMessage {
   usuarioTipo: string;
   criadoEm: string;
   replyToId?: number | null;
+  replyToNome?: string | null;
+  replyToConteudo?: string | null;
 }
 
 export interface PresenceUpdate {

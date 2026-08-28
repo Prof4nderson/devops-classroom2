@@ -7,6 +7,7 @@ import ChatRoom from './components/ChatRoom';
 import { Aula, Usuario } from './types';
 import api from './services/api';
 import AdminPanel from './components/AdminPanel';
+import GroupActivities from './components/GroupActivities';
 import {
   LayoutDashboard,
   Users,
@@ -30,9 +31,10 @@ import {
   Target,
   Clock,
   Settings,
+  UsersRound,
 } from 'lucide-react';
 
-type Page = 'dashboard' | 'cursos' | 'alunos' | 'downloads' | 'artigos' | 'atividades' | 'admin' | 'aula';
+type Page = 'dashboard' | 'cursos' | 'alunos' | 'downloads' | 'artigos' | 'atividades' | 'grupos' | 'admin' | 'aula';
 type DownloadItem = { id: string; titulo: string; descricao: string; tipo: string; tamanho: string; arquivo: string };
 type Trilha = { id: string; titulo: string; descricao: string; nivel: string; duracao: string; itens: string[] };
 type Artigo = { id: string; titulo: string; resumo: string; categoria: string; autor: string; leitura: string; tags: string[]; link?: string };
@@ -200,6 +202,14 @@ const DashboardView: React.FC = () => {
             </button>
 
             <button
+              onClick={() => { setCurrentPage('grupos'); setIsMobileMenuOpen(false); }}
+              className={`nav-item w-full ${currentPage === 'grupos' ? 'nav-item-active' : ''}`}
+            >
+              <UsersRound className="w-4 h-4" />
+              Atividades em grupo
+            </button>
+
+            <button
               onClick={() => { setCurrentPage('downloads'); setIsMobileMenuOpen(false); }}
               className={`nav-item w-full ${currentPage === 'downloads' ? 'nav-item-active' : ''}`}
             >
@@ -286,6 +296,7 @@ const DashboardView: React.FC = () => {
               {currentPage === 'downloads' && 'Downloads'}
               {currentPage === 'artigos' && 'Artigos'}
               {currentPage === 'atividades' && 'Atividades'}
+              {currentPage === 'grupos' && 'Atividades em grupo'}
               {currentPage === 'admin' && 'Administração'}
             </h1>
             <span className="text-xs md:text-sm txt-dim">
@@ -296,6 +307,10 @@ const DashboardView: React.FC = () => {
 
         <main className="p-4 md:p-6">
           {currentPage === 'admin' && (user.tipo === 'PROFESSOR' || user.tipo === 'ADMIN') && <AdminPanel />}
+
+          {currentPage === 'grupos' && (
+            <GroupActivities isProfessor={user.tipo === 'PROFESSOR' || user.tipo === 'ADMIN'} />
+          )}
 
           {currentPage === 'downloads' && (
             <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
