@@ -32,6 +32,12 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<UsuarioResponse> usuarioAtual(Authentication auth) {
+        Usuario usuario = (Usuario) auth.getPrincipal();
+        return ResponseEntity.ok(UsuarioResponse.fromEntity(usuario));
+    }
+
     @PostMapping("/register")
     public ResponseEntity<UsuarioResponse> register(@Valid @RequestBody UsuarioRequest request) {
         UsuarioResponse response = usuarioService.criarUsuario(request);
