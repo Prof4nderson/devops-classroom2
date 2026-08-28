@@ -32,10 +32,18 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    // Extrai o usuário autenticado sem lançar NullPointerException/ClassCastException,
+    // que antes eram convertidos em 400 (Bad Request) pelo handler global.
+    private Usuario usuarioAutenticado(Authentication auth) {
+        if (auth == null || !(auth.getPrincipal() instanceof Usuario usuario)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Sessão inválida ou expirada");
+        }
+        return usuario;
+    }
+
     @GetMapping("/me")
     public ResponseEntity<UsuarioResponse> usuarioAtual(Authentication auth) {
-        Usuario usuario = (Usuario) auth.getPrincipal();
-        return ResponseEntity.ok(UsuarioResponse.fromEntity(usuario));
+        return ResponseEntity.ok(UsuarioResponse.fromEntity(usuarioAutenticado(auth)));
     }
 
     @PostMapping("/register")
@@ -45,7 +53,7 @@ public class AuthController {
     }
 
     private void exigirProfessor(Authentication auth) {
-        Usuario usuario = (Usuario) auth.getPrincipal();
+        Usuario usuario = usuarioAutenticado(auth);
         if (usuario.getTipo() != TipoUsuario.PROFESSOR && usuario.getTipo() != TipoUsuario.ADMIN) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "CRUD disponível somente ao professor");
         }
@@ -65,7 +73,7 @@ public class AuthController {
 
     @GetMapping("/users/{id}")
     public ResponseEntity<UsuarioResponse> buscarUsuario(@PathVariable Long id, Authentication auth) {
-        Usuario autenticado = (Usuario) auth.getPrincipal();
+        Usuario autenticado = usuarioAutenticado(auth);
         // Compatibilidade com bundles antigos: cada usuário pode consultar somente o próprio perfil.
         // A consulta de perfis de terceiros continua exclusiva do professor/administrador.
         if (!id.equals(autenticado.getId())) exigirProfessor(auth);

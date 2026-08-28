@@ -61,25 +61,39 @@ const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
     localStorage.setItem('token', data.token);
     localStorage.setItem('userId', String(data.userId));
 
-    // Consulta o próprio perfil, sem depender do CRUD administrativo de usuários.
-    const userResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
-      headers: { Authorization: `Bearer ${data.token}` },
-    });
+    // Consulta o próprio perfil. Se o backend antigo/indisponível falhar aqui,
+    // o login NÃO é bloqueado: usamos os dados já retornados pelo /login.
+    const fallbackUser = {
+      id: data.userId,
+      login: data.login,
+      nome: data.nome,
+      email: '',
+      telefone: '',
+      tipo: data.tipoUsuario,
+      instituicao: '',
+      avatar: '',
+      bio: '',
+      criadoEm: '',
+    } as unknown as Usuario;
 
-    if (!userResponse.ok) {
-      throw new Error('Falha ao obter os dados do usuário autenticado.');
-    }
+    let userData: Usuario = fallbackUser;
 
-    const userText = await userResponse.text();
-    const userData: Usuario = userText ? JSON.parse(userText) : null;
-
-    if (!userData) {
-      throw new Error('Dados do usuário retornaram vazios.');
+    try {
+      const userResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
+        headers: { Authorization: `Bearer ${data.token}` },
+      });
+      if (userResponse.ok) {
+        const userText = await userResponse.text();
+        if (userText) userData = JSON.parse(userText) as Usuario;
+      }
+    } catch {
+      // mantém o fallback
     }
 
     localStorage.setItem('user', JSON.stringify(userData));
     setUser(userData);
     setToken(data.token);
+
   };
 
   const logout = () => {
