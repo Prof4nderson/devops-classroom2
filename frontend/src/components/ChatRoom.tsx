@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { ChatWebSocket } from '../services/websocket';
 import { ChatMessage, Aula, Usuario } from '../types';
-import { Send, Image, Code, Bot, Users, Clock, Trophy, LogOut, Reply, X } from 'lucide-react';
+import {
+  Send, Image, Code, Bot, Users, Clock, Trophy, LogOut, Reply, X,
+  PlayCircle, StopCircle, BookOpen,
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 
@@ -21,13 +24,22 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ aula, user, onLeave }) => {
   const [codeText, setCodeText] = useState('');
   const [codeLanguage, setCodeLanguage] = useState('bash');
   const [activeQuiz, setActiveQuiz] = useState<any>(null);
-  const [showQuizModal, setShowQuizModal] = useState(false);
+  const [quizResult, setQuizResult] = useState<any>(null);
+  const [minhaResposta, setMinhaResposta] = useState<string | null>(null);
+  const [feedbackQuiz, setFeedbackQuiz] = useState<{ correta: boolean; correcao?: string } | null>(null);
+  const [quizSegundos, setQuizSegundos] = useState<number | null>(null);
+  const [enviandoResposta, setEnviandoResposta] = useState(false);
+  const [showQuizCreator, setShowQuizCreator] = useState(false);
   const [quizForm, setQuizForm] = useState({
     pergunta: '',
     opcoes: ['', '', '', ''],
     respostaCorreta: '',
     tempoLimite: 30,
   });
+  const [aulaAtual, setAulaAtual] = useState<any>(aula);
+  const [showFecharAula, setShowFecharAula] = useState(false);
+  const [diarioForm, setDiarioForm] = useState({ conteudoMinistrado: '', observacoes: '' });
+  const ehDocente = user.tipo === 'PROFESSOR' || user.tipo === 'ADMIN';
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -60,6 +72,15 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ aula, user, onLeave }) => {
     }
     return mapa;
   };
+
+  // Contagem regressiva do quiz ativo
+  useEffect(() => {
+    if (quizSegundos === null || quizSegundos <= 0) return;
+    const t = setInterval(() => {
+      setQuizSegundos((v) => (v === null ? null : Math.max(0, v - 1)));
+    }, 1000);
+    return () => clearInterval(t);
+  }, [quizSegundos]);
 
   // Função para desconectar e sair da sala
   const handleLeave = async () => {
@@ -94,10 +115,32 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ aula, user, onLeave }) => {
     };
 
     const handleQuiz = (data: any) => {
-      if (data?.tipo === 'QUIZ_CREATED') {
+      if (!data?.tipo) return;
+
+      if (data.tipo === 'QUIZ_CREATED') {
         setActiveQuiz(data);
-        setShowQuizModal(true);
+        setQuizResult(null);
+        setMinhaResposta(null);
+        setFeedbackQuiz(null);
+        setQuizSegundos(data.tempoLimiteSegundos ?? null);
+        setShowQuizCreator(false);
         toast('Novo quiz do professor!', { icon: '🎯' });
+        return;
+      }
+
+      if (data.tipo === 'QUIZ_RESULT') {
+        setQuizResult(data);
+        setActiveQuiz((prev: any) => (prev && prev.quizId === data.quizId ? { ...prev, ...data } : prev));
+        return;
+      }
+
+      if (data.tipo === 'QUIZ_CLOSED') {
+        setQuizResult(data);
+        setQuizSegundos(0);
+        setActiveQuiz((prev: any) =>
+          prev && prev.quizId === data.quizId ? { ...prev, ...data, status: 'FINALIZADO' } : prev
+        );
+        toast('Quiz encerrado', { icon: '🏁' });
       }
     };
 
@@ -272,40 +315,101 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ aula, user, onLeave }) => {
     setQuizForm((prev) => ({
       ...prev,
       opcoes: novasOpcoes,
-      respostaCorreta: index === 0 ? value : prev.respostaCorreta || novasOpcoes[0],
+      respostaCorreta:
+        prev.respostaCorreta === prev.opcoes[index] || !prev.respostaCorreta
+          ? value
+          : prev.respostaCorreta,
     }));
   };
 
   const createQuiz = async () => {
-    const opcoesValidas = quizForm.opcoes.filter((o) => o.trim());
+    const opcoesValidas = quizForm.opcoes.map((o) => o.trim()).filter(Boolean);
     if (!quizForm.pergunta.trim() || opcoesValidas.length < 2) {
       toast.error('Preencha a pergunta e pelo menos 2 opções.');
       return;
     }
-    let quizId = Date.now();
+    const correta = opcoesValidas.includes(quizForm.respostaCorreta.trim())
+      ? quizForm.respostaCorreta.trim()
+      : opcoesValidas[0];
+
     const payload = {
-      aula: aula.id,
-      pergunta: quizForm.pergunta,
-      opcoes: quizForm.opcoes,
-      respostaCorreta: quizForm.respostaCorreta || opcoesValidas[0],
+      aulaId: aula.id,
+      pergunta: quizForm.pergunta.trim(),
+      opcoes: opcoesValidas,
+      respostaCorreta: correta,
       tempoLimiteSegundos: quizForm.tempoLimite,
     };
 
     try {
       const response = await api.post('/api/quizzes', payload);
-      if (response.data?.id) {
-        quizId = response.data.id;
-      }
-      toast.success('Quiz criado e salvo!');
+      const criado = response.data;
+      setActiveQuiz({ ...criado, tipo: 'QUIZ_CREATED' });
+      setQuizResult(null);
+      setMinhaResposta(null);
+      setFeedbackQuiz(null);
+      setQuizSegundos(criado?.tempoLimiteSegundos ?? quizForm.tempoLimite);
+      toast.success('Quiz publicado para a turma!');
     } catch (error) {
-      console.warn('Backend REST respondeu com erro, transmitindo quiz via WebSocket...', error);
-      toast('Quiz enviado via WebSocket!', { icon: '⚡' });
+      // fallback: o backend persiste ao receber pelo WebSocket
+      wsRef.current?.createQuiz(payload.pergunta, payload.opcoes, 0);
+      toast('Quiz enviado via WebSocket', { icon: '⚡' });
     }
 
-    wsRef.current?.createQuiz(quizForm.pergunta, opcoesValidas, quizId);
-
-    setShowQuizModal(false);
+    setShowQuizCreator(false);
     setQuizForm({ pergunta: '', opcoes: ['', '', '', ''], respostaCorreta: '', tempoLimite: 30 });
+  };
+
+  const responderQuiz = async (opcao: string) => {
+    if (!activeQuiz?.quizId || minhaResposta || enviandoResposta) return;
+    setEnviandoResposta(true);
+    try {
+      const { data } = await api.post('/api/quizzes/responder', {
+        quizId: activeQuiz.quizId,
+        respostaSelecionada: opcao,
+      });
+      setMinhaResposta(opcao);
+      setFeedbackQuiz({ correta: !!data?.correta });
+      if (data?.correta) toast.success('Resposta correta!');
+      else toast.error('Resposta incorreta');
+    } catch (error: any) {
+      const msg = error?.response?.data?.erro || error?.response?.data?.message;
+      toast.error(msg || 'Não foi possível registrar a resposta');
+    } finally {
+      setEnviandoResposta(false);
+    }
+  };
+
+  const finalizarQuiz = async () => {
+    if (!activeQuiz?.quizId) return;
+    try {
+      const { data } = await api.post(`/api/quizzes/${activeQuiz.quizId}/finalizar`);
+      setQuizResult(data);
+      setActiveQuiz((prev: any) => ({ ...prev, ...data, status: 'FINALIZADO' }));
+      toast.success('Quiz finalizado');
+    } catch {
+      toast.error('Erro ao finalizar o quiz');
+    }
+  };
+
+  const iniciarAula = async () => {
+    try {
+      const { data } = await api.post(`/api/diario/aula/${aula.id}/iniciar`);
+      setAulaAtual((prev: any) => ({ ...prev, ...data }));
+      toast.success('Aula iniciada — diário aberto');
+    } catch {
+      toast.error('Não foi possível iniciar a aula');
+    }
+  };
+
+  const finalizarAula = async () => {
+    try {
+      const { data } = await api.post(`/api/diario/aula/${aula.id}/finalizar`, diarioForm);
+      setAulaAtual((prev: any) => ({ ...prev, ...data }));
+      setShowFecharAula(false);
+      toast.success('Aula finalizada e presenças consolidadas');
+    } catch {
+      toast.error('Não foi possível finalizar a aula');
+    }
   };
 
   return (
@@ -352,6 +456,24 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ aula, user, onLeave }) => {
               <span>{aula?.duracao || '0h'}</span>
             </div>
 
+            {ehDocente && aulaAtual?.status !== 'EM_ANDAMENTO' && aulaAtual?.status !== 'FINALIZADA' && (
+              <button onClick={iniciarAula} className="btn-primary text-xs px-3 py-1.5" title="Iniciar aula">
+                <PlayCircle className="w-4 h-4" />
+                Iniciar aula
+              </button>
+            )}
+
+            {ehDocente && aulaAtual?.status === 'EM_ANDAMENTO' && (
+              <button
+                onClick={() => setShowFecharAula(true)}
+                className="btn-secondary text-xs px-3 py-1.5"
+                title="Finalizar aula e preencher o diário"
+              >
+                <StopCircle className="w-4 h-4 neon-amber" />
+                Finalizar aula
+              </button>
+            )}
+
             <button
               onClick={handleLeave}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-all text-xs font-medium cursor-pointer"
@@ -363,26 +485,143 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ aula, user, onLeave }) => {
           </div>
         </div>
 
-        {/* Quiz Modal */}
-        {showQuizModal && activeQuiz && (
+        {/* Painel do quiz ativo */}
+        {activeQuiz && (
           <div className="mx-4 mt-4 p-4 quiz-panel">
-            <div className="flex items-center gap-2 mb-2">
-              <Trophy className="w-5 h-5 neon-violet"/>
-              <span className="text-sm font-semibold neon-violet">
-                Quiz - {activeQuiz.professorNome}
-              </span>
-            </div>
-            <p className="mb-3">{activeQuiz.pergunta}</p>
-            <div className="space-y-2">
-              {(activeQuiz.opcoes || []).map((op: string, i: number) => (
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <div className="flex items-center gap-2">
+                <Trophy className="w-5 h-5 neon-violet" />
+                <span className="text-sm font-semibold neon-violet">
+                  Quiz {activeQuiz.professorNome ? `• ${activeQuiz.professorNome}` : ''}
+                </span>
+                {activeQuiz.status === 'FINALIZADO' && <span className="badge-ok">encerrado</span>}
+              </div>
+              <div className="flex items-center gap-2">
+                {quizSegundos !== null && activeQuiz.status !== 'FINALIZADO' && (
+                  <span className={`badge-neon ${quizSegundos === 0 ? 'opacity-60' : ''}`}>
+                    <Clock className="w-3.5 h-3.5" />
+                    {quizSegundos}s
+                  </span>
+                )}
                 <button
-                  key={i}
-                  onClick={() => wsRef.current?.respondQuiz(activeQuiz.quizId, op)}
-                  className="quiz-option"
+                  onClick={() => {
+                    setActiveQuiz(null);
+                    setQuizResult(null);
+                    setFeedbackQuiz(null);
+                    setMinhaResposta(null);
+                  }}
+                  className="icon-btn"
+                  title="Fechar"
                 >
-                  {op}
+                  <X className="w-4 h-4" />
                 </button>
-              ))}
+              </div>
+            </div>
+
+            <p className="mb-3 font-medium">{activeQuiz.pergunta}</p>
+
+            <div className="space-y-2">
+              {(activeQuiz.opcoes || []).map((op: string, i: number) => {
+                const contagem = quizResult?.contagem?.[op] ?? 0;
+                const total = quizResult?.totalRespostas ?? 0;
+                const pct = total > 0 ? Math.round((contagem / total) * 100) : 0;
+                const escolhida = minhaResposta === op;
+                const gabarito = activeQuiz.respostaCorreta;
+                const revelado = !!gabarito && (activeQuiz.status === 'FINALIZADO' || ehDocente);
+                const classe = revelado && op === gabarito
+                  ? 'quiz-option quiz-option-correct'
+                  : escolhida && feedbackQuiz && !feedbackQuiz.correta
+                    ? 'quiz-option quiz-option-wrong'
+                    : escolhida && feedbackQuiz?.correta
+                      ? 'quiz-option quiz-option-correct'
+                      : 'quiz-option';
+
+                return (
+                  <div key={i} className="space-y-1">
+                    <button
+                      onClick={() => responderQuiz(op)}
+                      disabled={
+                        ehDocente ||
+                        !!minhaResposta ||
+                        enviandoResposta ||
+                        activeQuiz.status === 'FINALIZADO' ||
+                        quizSegundos === 0
+                      }
+                      className={classe}
+                    >
+                      <span className="flex items-center justify-between gap-3">
+                        <span>{op}</span>
+                        {(ehDocente || activeQuiz.status === 'FINALIZADO') && (
+                          <span className="text-xs txt-dim">{contagem} ({pct}%)</span>
+                        )}
+                      </span>
+                    </button>
+                    {(ehDocente || activeQuiz.status === 'FINALIZADO') && (
+                      <div className="meter">
+                        <span style={{ width: `${pct}%` }} />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center justify-between gap-3 mt-3">
+              <p className="text-xs txt-dim">
+                {quizResult
+                  ? `${quizResult.totalRespostas} resposta(s) • ${quizResult.acertos} acerto(s) • ${quizResult.percentualAcerto}%`
+                  : minhaResposta
+                    ? 'Resposta registrada. Aguardando a turma...'
+                    : ehDocente
+                      ? 'Aguardando respostas da turma...'
+                      : 'Escolha uma opção'}
+              </p>
+              {ehDocente && activeQuiz.status !== 'FINALIZADO' && (
+                <button onClick={finalizarQuiz} className="btn-secondary text-xs px-3 py-1.5">
+                  Encerrar quiz
+                </button>
+              )}
+            </div>
+
+            {feedbackQuiz && (
+              <p className={`text-xs mt-2 ${feedbackQuiz.correta ? 'neon-lime' : 'text-red-400'}`}>
+                {feedbackQuiz.correta ? 'Você acertou!' : 'Você errou essa.'}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Finalizar aula: diário */}
+        {showFecharAula && (
+          <div className="mx-4 mt-4 p-4 card">
+            <h4 className="text-sm font-semibold neon-amber mb-3 flex items-center gap-2">
+              <BookOpen className="w-4 h-4" />
+              Encerrar aula e registrar no diário
+            </h4>
+            <textarea
+              className="input-field mb-2"
+              rows={3}
+              placeholder="Conteúdo ministrado..."
+              value={diarioForm.conteudoMinistrado}
+              onChange={(e) => setDiarioForm({ ...diarioForm, conteudoMinistrado: e.target.value })}
+            />
+            <textarea
+              className="input-field mb-3"
+              rows={2}
+              placeholder="Observações (opcional)"
+              value={diarioForm.observacoes}
+              onChange={(e) => setDiarioForm({ ...diarioForm, observacoes: e.target.value })}
+            />
+            <p className="text-xs txt-faint mb-3">
+              Ao finalizar, quem não registrou presença é marcado como ausente automaticamente.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setShowFecharAula(false)} className="btn-secondary text-sm">
+                Cancelar
+              </button>
+              <button onClick={finalizarAula} className="btn-primary text-sm">
+                Finalizar aula
+              </button>
             </div>
           </div>
         )}
@@ -572,8 +811,8 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ aula, user, onLeave }) => {
 
             {user.tipo === 'PROFESSOR' && (
               <button
-                onClick={() => setShowQuizModal(!showQuizModal)}
-                className="icon-btn"
+                onClick={() => setShowQuizCreator((v) => !v)}
+                className={`icon-btn ${showQuizCreator ? 'icon-btn-on' : ''}`}
                 title="Criar quiz"
               >
                 <Trophy className="w-5 h-5 neon-violet"/>
@@ -594,10 +833,10 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ aula, user, onLeave }) => {
             </button>
           </div>
 
-          {/* Quiz Creator Modal */}
-          {showQuizModal && user.tipo === 'PROFESSOR' && !activeQuiz && (
+          {/* Criação de quiz (professor) */}
+          {showQuizCreator && ehDocente && (
             <div className="mt-3 p-4 quiz-panel">
-              <h4 className="text-sm font-semibold neon-violet mb-3">Criar Quiz</h4>
+              <h4 className="text-sm font-semibold neon-violet mb-3">Criar quiz</h4>
               <input
                 className="input-field mb-2"
                 placeholder="Pergunta..."
@@ -605,38 +844,42 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ aula, user, onLeave }) => {
                 onChange={(e) => setQuizForm({ ...quizForm, pergunta: e.target.value })}
               />
               {quizForm.opcoes.map((op, i) => (
-                <input
-                  type="text"
-                  key={i}
-                  className="input-field mb-2"
-                  placeholder={`Opção ${i + 1}${i === 0 ? ' (correta)' : ''}`}
-                  value={op}
-                  onChange={(e) => handleOptionChange(i, e.target.value)}
-                />
+                <div key={i} className="flex items-center gap-2 mb-2">
+                  <input
+                    type="radio"
+                    name="respostaCorreta"
+                    className="accent-current"
+                    checked={!!op.trim() && quizForm.respostaCorreta === op}
+                    onChange={() => setQuizForm({ ...quizForm, respostaCorreta: op })}
+                    title="Marcar como resposta correta"
+                  />
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder={`Opção ${i + 1}`}
+                    value={op}
+                    onChange={(e) => handleOptionChange(i, e.target.value)}
+                  />
+                </div>
               ))}
+              <p className="text-xs txt-faint mb-3">Marque o círculo da alternativa correta.</p>
               <div className="flex items-center gap-2 mb-3">
                 <label className="text-sm txt-dim">Tempo (seg):</label>
                 <input
                   type="number"
-                  className="input-field w-20 py-1"
+                  className="input-field w-24 py-1"
                   value={quizForm.tempoLimite}
                   onChange={(e) =>
-                    setQuizForm({
-                      ...quizForm,
-                      tempoLimite: parseInt(e.target.value) || 30,
-                    })
+                    setQuizForm({ ...quizForm, tempoLimite: parseInt(e.target.value) || 30 })
                   }
                 />
               </div>
               <div className="flex justify-end gap-2">
-                <button
-                  onClick={() => setShowQuizModal(false)}
-                  className="btn-secondary text-sm"
-                >
+                <button onClick={() => setShowQuizCreator(false)} className="btn-secondary text-sm">
                   Cancelar
                 </button>
                 <button onClick={createQuiz} className="btn-primary text-sm">
-                  Criar Quiz
+                  Publicar quiz
                 </button>
               </div>
             </div>

@@ -10,4 +10,5 @@ import java.util.List;
 public interface AulaRepository extends JpaRepository<Aula, Long> {
     List<Aula> findByCursoId(Long cursoId);
     List<Aula> findByStatus(StatusAula status);
+    List<Aula> findByTurmaIdOrderByDataAulaAsc(Long turmaId);
 }

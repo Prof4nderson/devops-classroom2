@@ -8,6 +8,8 @@ import { Aula, Usuario } from './types';
 import api from './services/api';
 import AdminPanel from './components/AdminPanel';
 import GroupActivities from './components/GroupActivities';
+import Diario from './components/Diario';
+import ThemeSwitcher, { aplicarTemaSalvo } from './components/ThemeSwitcher';
 import {
   LayoutDashboard,
   Users,
@@ -32,9 +34,10 @@ import {
   Clock,
   Settings,
   UsersRound,
+  BookMarked,
 } from 'lucide-react';
 
-type Page = 'dashboard' | 'cursos' | 'alunos' | 'downloads' | 'artigos' | 'atividades' | 'grupos' | 'admin' | 'aula';
+type Page = 'dashboard' | 'cursos' | 'alunos' | 'downloads' | 'artigos' | 'atividades' | 'grupos' | 'admin' | 'diario' | 'aula';
 type DownloadItem = { id: string; titulo: string; descricao: string; tipo: string; tamanho: string; arquivo: string };
 type Trilha = { id: string; titulo: string; descricao: string; nivel: string; duracao: string; itens: string[] };
 type Artigo = { id: string; titulo: string; resumo: string; categoria: string; autor: string; leitura: string; tags: string[]; link?: string };
@@ -210,6 +213,14 @@ const DashboardView: React.FC = () => {
             </button>
 
             <button
+              onClick={() => { setCurrentPage('diario'); setIsMobileMenuOpen(false); }}
+              className={`nav-item w-full ${currentPage === 'diario' ? 'nav-item-active' : ''}`}
+            >
+              <BookMarked className="w-4 h-4" />
+              {user.tipo === 'ALUNO' ? 'Meu boletim' : 'Diário de classe'}
+            </button>
+
+            <button
               onClick={() => { setCurrentPage('downloads'); setIsMobileMenuOpen(false); }}
               className={`nav-item w-full ${currentPage === 'downloads' ? 'nav-item-active' : ''}`}
             >
@@ -298,15 +309,23 @@ const DashboardView: React.FC = () => {
               {currentPage === 'atividades' && 'Atividades'}
               {currentPage === 'grupos' && 'Atividades em grupo'}
               {currentPage === 'admin' && 'Administração'}
+              {currentPage === 'diario' && (user.tipo === 'ALUNO' ? 'Meu boletim' : 'Diário de classe')}
             </h1>
-            <span className="text-xs md:text-sm txt-dim">
+            <div className="flex items-center gap-3">
+              <ThemeSwitcher />
+              <span className="text-xs md:text-sm txt-dim">
               {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-            </span>
+              </span>
+            </div>
           </div>
         </header>
 
         <main className="p-4 md:p-6">
           {currentPage === 'admin' && (user.tipo === 'PROFESSOR' || user.tipo === 'ADMIN') && <AdminPanel />}
+
+          {currentPage === 'diario' && (
+            <Diario isProfessor={user.tipo === 'PROFESSOR' || user.tipo === 'ADMIN'} />
+          )}
 
           {currentPage === 'grupos' && (
             <GroupActivities isProfessor={user.tipo === 'PROFESSOR' || user.tipo === 'ADMIN'} />
@@ -520,6 +539,8 @@ const DashboardView: React.FC = () => {
 };
 
 // Gerenciador de Rotas Principal
+aplicarTemaSalvo();
+
 function App() {
   const { user, loading } = useAuth();
 

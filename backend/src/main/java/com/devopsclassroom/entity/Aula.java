@@ -2,6 +2,7 @@ package com.devopsclassroom.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -40,6 +41,21 @@ public class Aula {
     @Enumerated(EnumType.STRING)
     private StatusAula status;
 
+    /** Momento em que o professor iniciou a aula (abre o diário). */
+    @Column(name = "iniciada_em")
+    private LocalDateTime iniciadaEm;
+
+    /** Momento em que o professor encerrou a aula (fecha o diário). */
+    @Column(name = "finalizada_em")
+    private LocalDateTime finalizadaEm;
+
+    /** Conteúdo efetivamente ministrado — registrado no diário. */
+    @Column(name = "conteudo_ministrado", length = 4000)
+    private String conteudoMinistrado;
+
+    @Column(length = 2000)
+    private String observacoes;
+
     @Column(name = "criado_em")
     private LocalDateTime criadoEm;
 
@@ -48,6 +64,12 @@ public class Aula {
         criadoEm = LocalDateTime.now();
         if (status == null) status = StatusAula.AGENDADA;
     }
+
+    @JsonProperty("cursoId")
+    public Long cursoIdJson() { return curso != null ? curso.getId() : null; }
+
+    @JsonProperty("turmaId")
+    public Long turmaIdJson() { return turma != null ? turma.getId() : null; }
 
     // Getters and Setters
     public Long getId() { return id; }
@@ -66,6 +88,14 @@ public class Aula {
     public void setDuracao(String duracao) { this.duracao = duracao; }
     public StatusAula getStatus() { return status; }
     public void setStatus(StatusAula status) { this.status = status; }
+    public LocalDateTime getIniciadaEm() { return iniciadaEm; }
+    public void setIniciadaEm(LocalDateTime iniciadaEm) { this.iniciadaEm = iniciadaEm; }
+    public LocalDateTime getFinalizadaEm() { return finalizadaEm; }
+    public void setFinalizadaEm(LocalDateTime finalizadaEm) { this.finalizadaEm = finalizadaEm; }
+    public String getConteudoMinistrado() { return conteudoMinistrado; }
+    public void setConteudoMinistrado(String conteudoMinistrado) { this.conteudoMinistrado = conteudoMinistrado; }
+    public String getObservacoes() { return observacoes; }
+    public void setObservacoes(String observacoes) { this.observacoes = observacoes; }
     public LocalDateTime getCriadoEm() { return criadoEm; }
     public void setCriadoEm(LocalDateTime criadoEm) { this.criadoEm = criadoEm; }
 }

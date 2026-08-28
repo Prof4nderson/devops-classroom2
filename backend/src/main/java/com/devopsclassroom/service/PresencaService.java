@@ -1,8 +1,6 @@
 package com.devopsclassroom.service;
 
-import com.devopsclassroom.entity.Aula;
-import com.devopsclassroom.entity.Presenca;
-import com.devopsclassroom.entity.Usuario;
+import com.devopsclassroom.entity.*;
 import com.devopsclassroom.repository.AulaRepository;
 import com.devopsclassroom.repository.PresencaRepository;
 import com.devopsclassroom.repository.UsuarioRepository;
@@ -27,32 +25,47 @@ public class PresencaService {
 
     @Transactional
     public Presenca registrarPresenca(Long usuarioId, Long aulaId) {
-        if (presencaRepository.existsByUsuarioIdAndAulaId(usuarioId, aulaId)) {
-            throw new RuntimeException("Presença já registrada");
-        }
+        return definirStatus(usuarioId, aulaId, StatusPresenca.PRESENTE, null);
+    }
 
+    /** Cria ou atualiza o registro de presença do aluno na aula. */
+    @Transactional
+    public Presenca definirStatus(Long usuarioId, Long aulaId, StatusPresenca status, String observacao) {
         Aula aula = aulaRepository.findById(aulaId)
                 .orElseThrow(() -> new RuntimeException("Aula não encontrada"));
         Usuario usuario = usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-        Presenca presenca = new Presenca();
-        presenca.setUsuario(usuario);
-        presenca.setAula(aula);
+        Presenca presenca = presencaRepository.findByUsuarioIdAndAulaId(usuarioId, aulaId)
+                .orElseGet(() -> {
+                    Presenca nova = new Presenca();
+                    nova.setUsuario(usuario);
+                    nova.setAula(aula);
+                    return nova;
+                });
+        presenca.setStatus(status != null ? status : StatusPresenca.PRESENTE);
+        if (observacao != null) presenca.setObservacao(observacao);
         return presencaRepository.save(presenca);
     }
 
     public List<Usuario> listarPresentes(Long aulaId) {
         return presencaRepository.findByAulaId(aulaId).stream()
+                .filter(p -> p.getStatus() != StatusPresenca.AUSENTE)
                 .map(Presenca::getUsuario)
                 .toList();
     }
 
+    public List<Presenca> listarRegistros(Long aulaId) {
+        return presencaRepository.findByAulaId(aulaId);
+    }
+
     public long contarPresentes(Long aulaId) {
-        return presencaRepository.findByAulaId(aulaId).size();
+        return listarPresentes(aulaId).size();
     }
 
     public boolean verificarPresenca(Long usuarioId, Long aulaId) {
-        return presencaRepository.existsByUsuarioIdAndAulaId(usuarioId, aulaId);
+        return presencaRepository.findByUsuarioIdAndAulaId(usuarioId, aulaId)
+                .map(p -> p.getStatus() != StatusPresenca.AUSENTE)
+                .orElse(false);
     }
 }

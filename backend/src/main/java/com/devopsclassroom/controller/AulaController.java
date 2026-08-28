@@ -82,6 +82,17 @@ public class AulaController {
         return ResponseEntity.ok(aulaService.finalizarAula(id));
     }
 
+    @GetMapping("/todas")
+    public ResponseEntity<List<Aula>> listarTodas(Authentication auth) {
+        exigirProfessor(auth);
+        return ResponseEntity.ok(aulaService.listarTodas());
+    }
+
+    @GetMapping("/turma/{turmaId}")
+    public ResponseEntity<List<Aula>> listarAulasDaTurma(@PathVariable Long turmaId) {
+        return ResponseEntity.ok(aulaService.listarAulasPorTurma(turmaId));
+    }
+
     @GetMapping("/em-andamento")
     public ResponseEntity<List<Aula>> listarAulasEmAndamento() {
         return ResponseEntity.ok(aulaService.listarAulasEmAndamento());

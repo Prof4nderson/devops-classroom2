@@ -9,6 +9,8 @@ public class AulaRequest {
     @NotBlank(message = "Título é obrigatório")
     private String titulo;
 
+    private Long turmaId;
+
     private String descricao;
     private String dataAula; // ISO format
     private String duracao;
@@ -16,6 +18,8 @@ public class AulaRequest {
 
     public Long getCursoId() { return cursoId; }
     public void setCursoId(Long cursoId) { this.cursoId = cursoId; }
+    public Long getTurmaId() { return turmaId; }
+    public void setTurmaId(Long turmaId) { this.turmaId = turmaId; }
     public String getTitulo() { return titulo; }
     public void setTitulo(String titulo) { this.titulo = titulo; }
     public String getDescricao() { return descricao; }
