@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 
 public enum TipoUsuario {
     ADMIN,
-    USER;
+    USER,
+    ALUNO,
+    PROFESSOR,
+    AI;
 
     @JsonCreator
     public static TipoUsuario fromValue(String value) {
