@@ -1,0 +1,1 @@
+package com.devopsclassroom.repository; import com.devopsclassroom.entity.Trilha; import org.springframework.data.jpa.repository.JpaRepository; public interface TrilhaRepository extends JpaRepository<Trilha,Long>{}

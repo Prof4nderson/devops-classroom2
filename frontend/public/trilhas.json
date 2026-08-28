@@ -1,0 +1,26 @@
+[
+  {
+    "id": "devops-fundamentos",
+    "titulo": "Fundamentos de DevOps",
+    "descricao": "Práticas essenciais de cultura, automação e entrega contínua.",
+    "nivel": "Iniciante",
+    "duracao": "4 semanas",
+    "itens": ["Cultura DevOps", "Git e colaboração", "CI/CD", "Observabilidade"]
+  },
+  {
+    "id": "cloud-native",
+    "titulo": "Cloud Native",
+    "descricao": "Construa aplicações resilientes usando containers e orquestração.",
+    "nivel": "Intermediário",
+    "duracao": "6 semanas",
+    "itens": ["Docker", "Kubernetes", "Segurança", "Escalabilidade"]
+  },
+  {
+    "id": "platform-engineering",
+    "titulo": "Platform Engineering",
+    "descricao": "Estruture plataformas internas que aceleram o trabalho dos times.",
+    "nivel": "Avançado",
+    "duracao": "8 semanas",
+    "itens": ["IDP", "Infraestrutura como código", "Golden paths", "Métricas"]
+  }
+]

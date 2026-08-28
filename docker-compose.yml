@@ -1,0 +1,83 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: devops_postgres
+    ports:
+      - "127.0.0.1:5432:5432"
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks:
+      - app-net
+  ollama:
+    image: ollama/ollama:latest
+    container_name: devops-classroom-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - app-net
+
+  backend:
+    build: ./backend
+    container_name: devops2-backend
+    ports:
+      - "8087:8080"
+    restart: unless-stopped
+   # expose:
+    #  - "8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      #OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      #LANGCHAIN4J_OLLAMA_BASE_URL: http://ollama:11434
+      #PGVECTOR_HOST: postgres
+      #PGVECTOR_PORT: "5432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    networks:
+      - app-net
+
+  frontend:
+    build: ./frontend
+    container_name: devops2-frontend
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+    ports:
+      - "3007:80"
+    restart: unless-stopped
+    
+    depends_on:
+      - backend
+    networks:
+      - app-net
+
+volumes:
+  postgres_data:
+  ollama_data:
+
+networks:
+  app-net:
+    driver: bridge

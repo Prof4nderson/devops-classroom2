@@ -1,0 +1,1 @@
+package com.devopsclassroom.repository; import com.devopsclassroom.entity.Equipe; import org.springframework.data.jpa.repository.JpaRepository; import java.util.List; public interface EquipeRepository extends JpaRepository<Equipe,Long>{List<Equipe> findByTurmaId(Long turmaId);}
