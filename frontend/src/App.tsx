@@ -6,6 +6,7 @@ import RegisterForm from './components/RegisterForm';
 import ChatRoom from './components/ChatRoom';
 import { Aula, Usuario } from './types';
 import api from './services/api';
+import AdminPanel from './components/AdminPanel';
 import {
   LayoutDashboard,
   Users,
@@ -28,9 +29,10 @@ import {
   Layers,
   Target,
   Clock,
+  Settings,
 } from 'lucide-react';
 
-type Page = 'dashboard' | 'cursos' | 'alunos' | 'downloads' | 'artigos' | 'atividades' | 'aula';
+type Page = 'dashboard' | 'cursos' | 'alunos' | 'downloads' | 'artigos' | 'atividades' | 'admin' | 'aula';
 type DownloadItem = { id: string; titulo: string; descricao: string; tipo: string; tamanho: string; arquivo: string };
 type Trilha = { id: string; titulo: string; descricao: string; nivel: string; duracao: string; itens: string[] };
 type Artigo = { id: string; titulo: string; resumo: string; categoria: string; autor: string; leitura: string; tags: string[]; link?: string };
@@ -214,6 +216,16 @@ const DashboardView: React.FC = () => {
                 Alunos
               </button>
             )}
+
+            {(user.tipo === 'PROFESSOR' || user.tipo === 'ADMIN') && (
+              <button
+                onClick={() => { setCurrentPage('admin'); setIsMobileMenuOpen(false); }}
+                className={`nav-item w-full ${currentPage === 'admin' ? 'nav-item-active' : ''}`}
+              >
+                <Settings className="w-4 h-4" />
+                Administração
+              </button>
+            )}
           </nav>
         </div>
 
@@ -274,6 +286,7 @@ const DashboardView: React.FC = () => {
               {currentPage === 'downloads' && 'Downloads'}
               {currentPage === 'artigos' && 'Artigos'}
               {currentPage === 'atividades' && 'Atividades'}
+              {currentPage === 'admin' && 'Administração'}
             </h1>
             <span className="text-xs md:text-sm txt-dim">
               {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
@@ -282,6 +295,8 @@ const DashboardView: React.FC = () => {
         </header>
 
         <main className="p-4 md:p-6">
+          {currentPage === 'admin' && (user.tipo === 'PROFESSOR' || user.tipo === 'ADMIN') && <AdminPanel />}
+
           {currentPage === 'downloads' && (
             <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {downloads.map((item) => (
