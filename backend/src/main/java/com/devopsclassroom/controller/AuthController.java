@@ -65,7 +65,10 @@ public class AuthController {
 
     @GetMapping("/users/{id}")
     public ResponseEntity<UsuarioResponse> buscarUsuario(@PathVariable Long id, Authentication auth) {
-        exigirProfessor(auth);
+        Usuario autenticado = (Usuario) auth.getPrincipal();
+        // Compatibilidade com bundles antigos: cada usuário pode consultar somente o próprio perfil.
+        // A consulta de perfis de terceiros continua exclusiva do professor/administrador.
+        if (!id.equals(autenticado.getId())) exigirProfessor(auth);
         return ResponseEntity.ok(usuarioService.buscarPorId(id));
     }
 
