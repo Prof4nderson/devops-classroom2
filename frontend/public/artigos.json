@@ -1,0 +1,62 @@
+[
+  {
+    "id": "art-1",
+    "titulo": "Pipelines CI/CD na prática",
+    "resumo": "Como estruturar build, testes e deploy contínuo com GitHub Actions e GitLab CI sem quebrar a produção.",
+    "categoria": "CI/CD",
+    "autor": "Equipe DevOps Classroom",
+    "leitura": "8 min",
+    "tags": ["pipeline", "automação", "testes"],
+    "link": "https://docs.github.com/actions"
+  },
+  {
+    "id": "art-2",
+    "titulo": "Containers do zero ao deploy",
+    "resumo": "Imagens enxutas, multi-stage build, cache de camadas e boas práticas de segurança em Docker.",
+    "categoria": "Containers",
+    "autor": "Equipe DevOps Classroom",
+    "leitura": "10 min",
+    "tags": ["docker", "imagens", "segurança"],
+    "link": "https://docs.docker.com/build/building/best-practices/"
+  },
+  {
+    "id": "art-3",
+    "titulo": "Observabilidade: logs, métricas e traces",
+    "resumo": "Os três pilares da observabilidade aplicados a uma stack Prometheus + Grafana + OpenTelemetry.",
+    "categoria": "Observabilidade",
+    "autor": "Equipe DevOps Classroom",
+    "leitura": "12 min",
+    "tags": ["prometheus", "grafana", "otel"],
+    "link": "https://opentelemetry.io/docs/"
+  },
+  {
+    "id": "art-4",
+    "titulo": "Infraestrutura como código com Terraform",
+    "resumo": "Estado remoto, módulos reutilizáveis e revisão de plano antes de aplicar mudanças na nuvem.",
+    "categoria": "IaC",
+    "autor": "Equipe DevOps Classroom",
+    "leitura": "9 min",
+    "tags": ["terraform", "cloud", "iac"],
+    "link": "https://developer.hashicorp.com/terraform/docs"
+  },
+  {
+    "id": "art-5",
+    "titulo": "Kubernetes para quem vem do Docker Compose",
+    "resumo": "Pods, Deployments, Services e Ingress explicados a partir do que você já conhece de compose.",
+    "categoria": "Kubernetes",
+    "autor": "Equipe DevOps Classroom",
+    "leitura": "14 min",
+    "tags": ["k8s", "deploy", "escala"],
+    "link": "https://kubernetes.io/docs/concepts/"
+  },
+  {
+    "id": "art-6",
+    "titulo": "DevSecOps: segurança no pipeline",
+    "resumo": "SAST, SCA e varredura de imagens integrados ao fluxo de entrega sem travar o time.",
+    "categoria": "Segurança",
+    "autor": "Equipe DevOps Classroom",
+    "leitura": "7 min",
+    "tags": ["segurança", "scan", "compliance"],
+    "link": "https://owasp.org/www-project-devsecops-guideline/"
+  }
+]

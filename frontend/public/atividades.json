@@ -1,0 +1,38 @@
+[
+  {
+    "id": "atv-1",
+    "titulo": "Containerize uma API REST",
+    "descricao": "Escreva um Dockerfile multi-stage para uma API e publique a imagem em um registry local.",
+    "nivel": "Iniciante",
+    "pontos": 100,
+    "prazo": "Semana 2",
+    "entregavel": "Dockerfile + print do container em execução"
+  },
+  {
+    "id": "atv-2",
+    "titulo": "Pipeline de build e testes",
+    "descricao": "Configure um workflow que roda lint, testes e build a cada push na branch principal.",
+    "nivel": "Intermediário",
+    "pontos": 150,
+    "prazo": "Semana 4",
+    "entregavel": "Arquivo de pipeline + link da execução verde"
+  },
+  {
+    "id": "atv-3",
+    "titulo": "Stack de monitoramento",
+    "descricao": "Suba Prometheus e Grafana via compose e crie um dashboard com métricas da sua aplicação.",
+    "nivel": "Intermediário",
+    "pontos": 150,
+    "prazo": "Semana 6",
+    "entregavel": "docker-compose.yml + JSON do dashboard"
+  },
+  {
+    "id": "atv-4",
+    "titulo": "Deploy declarativo no Kubernetes",
+    "descricao": "Crie Deployment, Service e Ingress para sua aplicação e valide o rollout sem downtime.",
+    "nivel": "Avançado",
+    "pontos": 200,
+    "prazo": "Semana 8",
+    "entregavel": "Manifestos YAML + evidência do rollout"
+  }
+]

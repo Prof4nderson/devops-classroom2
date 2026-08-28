@@ -21,11 +21,21 @@ import {
   X,
   Download,
   FileDown,
+  Newspaper,
+  ClipboardList,
+  ExternalLink,
+  Building2,
+  Layers,
+  Target,
+  Clock,
 } from 'lucide-react';
 
-type Page = 'dashboard' | 'cursos' | 'alunos' | 'downloads' | 'aula';
+type Page = 'dashboard' | 'cursos' | 'alunos' | 'downloads' | 'artigos' | 'atividades' | 'aula';
 type DownloadItem = { id: string; titulo: string; descricao: string; tipo: string; tamanho: string; arquivo: string };
 type Trilha = { id: string; titulo: string; descricao: string; nivel: string; duracao: string; itens: string[] };
+type Artigo = { id: string; titulo: string; resumo: string; categoria: string; autor: string; leitura: string; tags: string[]; link?: string };
+type Atividade = { id: string; titulo: string; descricao: string; nivel: string; pontos: number; prazo: string; entregavel: string };
+type Contexto = { instituicao?: string; curso?: string; cursoCodigo?: string; turma?: string; turmaCodigo?: string; periodo?: string };
 
 const DashboardView: React.FC = () => {
   const { user, logout } = useAuth();
@@ -37,6 +47,9 @@ const DashboardView: React.FC = () => {
   const [alunos, setAlunos] = useState<Usuario[]>([]);
   const [trilhas, setTrilhas] = useState<Trilha[]>([]);
   const [downloads, setDownloads] = useState<DownloadItem[]>([]);
+  const [artigos, setArtigos] = useState<Artigo[]>([]);
+  const [atividades, setAtividades] = useState<Atividade[]>([]);
+  const [contexto, setContexto] = useState<Contexto>({});
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // 1. Carregar dados do backend
@@ -60,6 +73,20 @@ const DashboardView: React.FC = () => {
       }
       const downloadsResp = await fetch('/downloads.json');
       if (downloadsResp.ok) setDownloads(await downloadsResp.json());
+
+      const [artigosResp, atividadesResp] = await Promise.all([
+        fetch('/artigos.json'),
+        fetch('/atividades.json'),
+      ]);
+      if (artigosResp.ok) setArtigos(await artigosResp.json());
+      if (atividadesResp.ok) setAtividades(await atividadesResp.json());
+
+      try {
+        const ctxResp = await api.get('/api/contexto/meu');
+        setContexto(ctxResp.data || {});
+      } catch {
+        setContexto({ instituicao: user?.instituicao });
+      }
     } catch (error: any) {
       console.error('Erro ao carregar dados:', error);
       if (error.response?.status === 401 || error.response?.status === 403) {
@@ -155,6 +182,22 @@ const DashboardView: React.FC = () => {
             </button>
 
             <button
+              onClick={() => { setCurrentPage('artigos'); setIsMobileMenuOpen(false); }}
+              className={`nav-item w-full ${currentPage === 'artigos' ? 'nav-item-active' : ''}`}
+            >
+              <Newspaper className="w-4 h-4" />
+              Artigos
+            </button>
+
+            <button
+              onClick={() => { setCurrentPage('atividades'); setIsMobileMenuOpen(false); }}
+              className={`nav-item w-full ${currentPage === 'atividades' ? 'nav-item-active' : ''}`}
+            >
+              <ClipboardList className="w-4 h-4" />
+              Atividades
+            </button>
+
+            <button
               onClick={() => { setCurrentPage('downloads'); setIsMobileMenuOpen(false); }}
               className={`nav-item w-full ${currentPage === 'downloads' ? 'nav-item-active' : ''}`}
             >
@@ -202,12 +245,35 @@ const DashboardView: React.FC = () => {
       {/* 📄 CONTEÚDO PRINCIPAL */}
       <div className="flex-1 overflow-x-hidden min-w-0">
         <header className="p-4 md:p-6 border-b divider glass-bar">
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <span className="chip-info">
+              <Building2 className="h-3.5 w-3.5 neon" />
+              {contexto.instituicao || user.instituicao || 'Instituição não informada'}
+            </span>
+            <span className="chip-info">
+              <BookOpen className="h-3.5 w-3.5 neon-lime" />
+              {contexto.curso || 'Curso não informado'}
+              {contexto.cursoCodigo ? ` · ${contexto.cursoCodigo}` : ''}
+            </span>
+            <span className="chip-info">
+              <Layers className="h-3.5 w-3.5 neon-violet" />
+              Turma {contexto.turma || contexto.turmaCodigo || 'não informada'}
+            </span>
+            {contexto.periodo && (
+              <span className="chip-info">
+                <Calendar className="h-3.5 w-3.5 neon-amber" />
+                {contexto.periodo}
+              </span>
+            )}
+          </div>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <h1 className="text-xl md:text-2xl font-bold title-glow">
               {currentPage === 'dashboard' && 'Dashboard'}
               {currentPage === 'cursos' && 'Cursos'}
               {currentPage === 'alunos' && 'Alunos'}
               {currentPage === 'downloads' && 'Downloads'}
+              {currentPage === 'artigos' && 'Artigos'}
+              {currentPage === 'atividades' && 'Atividades'}
             </h1>
             <span className="text-xs md:text-sm txt-dim">
               {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
@@ -231,6 +297,64 @@ const DashboardView: React.FC = () => {
                 </article>
               ))}
               {downloads.length === 0 && <p className="card txt-dim">Nenhum material disponível no momento.</p>}
+            </section>
+          )}
+
+          {currentPage === 'artigos' && (
+            <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {artigos.map((artigo) => (
+                <article key={artigo.id} className="card card-glow flex flex-col justify-between gap-4">
+                  <div>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="rounded-xl glass p-3"><Newspaper className="h-5 w-5 neon" /></div>
+                      <span className="badge-neon">{artigo.categoria}</span>
+                    </div>
+                    <h2 className="font-semibold mt-4">{artigo.titulo}</h2>
+                    <p className="text-sm txt-dim mt-2">{artigo.resumo}</p>
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                      {artigo.tags?.map((tag) => (
+                        <span key={tag} className="chip-tag">#{tag}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs txt-faint">
+                    <span>{artigo.autor}</span>
+                    <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{artigo.leitura}</span>
+                  </div>
+                  {artigo.link && (
+                    <a href={artigo.link} target="_blank" rel="noreferrer" className="btn-secondary w-full justify-center">
+                      <ExternalLink className="h-4 w-4" /> Ler artigo
+                    </a>
+                  )}
+                </article>
+              ))}
+              {artigos.length === 0 && <p className="card txt-dim">Nenhum artigo publicado ainda.</p>}
+            </section>
+          )}
+
+          {currentPage === 'atividades' && (
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {atividades.map((atividade) => (
+                <article key={atividade.id} className="card card-glow flex flex-col gap-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-xl glass p-3"><ClipboardList className="h-5 w-5 neon-lime" /></div>
+                      <div>
+                        <h2 className="font-semibold">{atividade.titulo}</h2>
+                        <p className="text-xs txt-faint mt-1">{atividade.nivel} · {atividade.prazo}</p>
+                      </div>
+                    </div>
+                    <span className="badge-neon flex items-center gap-1">
+                      <Target className="h-3 w-3" />{atividade.pontos} pts
+                    </span>
+                  </div>
+                  <p className="text-sm txt-dim">{atividade.descricao}</p>
+                  <p className="text-xs txt-faint border-t divider pt-3">
+                    Entregável: <span className="txt-dim">{atividade.entregavel}</span>
+                  </p>
+                </article>
+              ))}
+              {atividades.length === 0 && <p className="card txt-dim">Nenhuma atividade cadastrada.</p>}
             </section>
           )}
 
