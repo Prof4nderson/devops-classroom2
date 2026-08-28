@@ -61,8 +61,8 @@ const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
     localStorage.setItem('token', data.token);
     localStorage.setItem('userId', String(data.userId));
 
-    // 🎯 3. MUDE AQUI TAMBÉM
-    const userResponse = await fetch(`${API_BASE_URL}/api/auth/users/${data.userId}`, {
+    // Consulta o próprio perfil, sem depender do CRUD administrativo de usuários.
+    const userResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
       headers: { Authorization: `Bearer ${data.token}` },
     });
 

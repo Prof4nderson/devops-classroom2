@@ -19,9 +19,12 @@ import {
   Loader2,
   Menu,
   X,
+  Download,
+  FileDown,
 } from 'lucide-react';
 
-type Page = 'dashboard' | 'cursos' | 'alunos' | 'aula';
+type Page = 'dashboard' | 'cursos' | 'alunos' | 'downloads' | 'aula';
+type DownloadItem = { id: string; titulo: string; descricao: string; tipo: string; tamanho: string; arquivo: string };
 type Trilha = { id: string; titulo: string; descricao: string; nivel: string; duracao: string; itens: string[] };
 
 const DashboardView: React.FC = () => {
@@ -33,6 +36,7 @@ const DashboardView: React.FC = () => {
   const [cursos, setCursos] = useState<any[]>([]);
   const [alunos, setAlunos] = useState<Usuario[]>([]);
   const [trilhas, setTrilhas] = useState<Trilha[]>([]);
+  const [downloads, setDownloads] = useState<DownloadItem[]>([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // 1. Carregar dados do backend
@@ -54,6 +58,8 @@ const DashboardView: React.FC = () => {
         const fallback = await fetch('/trilhas.json').then((response) => response.ok ? response.json() : []);
         setTrilhas(fallback);
       }
+      const downloadsResp = await fetch('/downloads.json');
+      if (downloadsResp.ok) setDownloads(await downloadsResp.json());
     } catch (error: any) {
       console.error('Erro ao carregar dados:', error);
       if (error.response?.status === 401 || error.response?.status === 403) {
@@ -148,6 +154,14 @@ const DashboardView: React.FC = () => {
               Cursos
             </button>
 
+            <button
+              onClick={() => { setCurrentPage('downloads'); setIsMobileMenuOpen(false); }}
+              className={`nav-item w-full ${currentPage === 'downloads' ? 'nav-item-active' : ''}`}
+            >
+              <Download className="w-4 h-4" />
+              Downloads
+            </button>
+
             {(user.tipo === 'PROFESSOR' || user.tipo === 'ADMIN') && (
               <button
                 onClick={() => { setCurrentPage('alunos'); setIsMobileMenuOpen(false); }}
@@ -193,6 +207,7 @@ const DashboardView: React.FC = () => {
               {currentPage === 'dashboard' && 'Dashboard'}
               {currentPage === 'cursos' && 'Cursos'}
               {currentPage === 'alunos' && 'Alunos'}
+              {currentPage === 'downloads' && 'Downloads'}
             </h1>
             <span className="text-xs md:text-sm txt-dim">
               {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
@@ -201,6 +216,24 @@ const DashboardView: React.FC = () => {
         </header>
 
         <main className="p-4 md:p-6">
+          {currentPage === 'downloads' && (
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {downloads.map((item) => (
+                <article key={item.id} className="card flex flex-col justify-between gap-5">
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-xl glass p-3"><FileDown className="h-5 w-5 neon" /></div>
+                      <div><h2 className="font-semibold">{item.titulo}</h2><p className="text-xs txt-faint mt-1">{item.tipo} · {item.tamanho}</p></div>
+                    </div>
+                    <p className="text-sm txt-dim mt-4">{item.descricao}</p>
+                  </div>
+                  <a href={item.arquivo} download className="btn-primary w-full justify-center"><Download className="h-4 w-4" /> Baixar material</a>
+                </article>
+              ))}
+              {downloads.length === 0 && <p className="card txt-dim">Nenhum material disponível no momento.</p>}
+            </section>
+          )}
+
           {currentPage === 'dashboard' && (
             <div className="space-y-6">
               <section className="mb-8">
