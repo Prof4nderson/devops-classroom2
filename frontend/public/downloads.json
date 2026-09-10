@@ -1,0 +1,18 @@
+[
+  {
+    "id": "guia-devops",
+    "titulo": "Guia de Fundamentos DevOps",
+    "descricao": "Material introdutório para acompanhar as aulas e trilhas.",
+    "tipo": "PDF",
+    "tamanho": "Disponível para download",
+    "arquivo": "/downloads/guia-devops.md"
+  },
+  {
+    "id": "checklist-deploy",
+    "titulo": "Checklist de Deploy",
+    "descricao": "Lista de verificação para preparar uma entrega com segurança.",
+    "tipo": "CHECKLIST",
+    "tamanho": "Material de apoio",
+    "arquivo": "/downloads/checklist-deploy.md"
+  }
+]

@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/devops_classroom
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+langchain4j:
+  ollama:
+    base-url: http://localhost:11434
+    model-name: phi3:latest
+
+pgvector:
+  host: localhost
+  port: 5432
+
+cors:
+  allowed-origins: "http://localhost:5173,http://localhost:3000"
