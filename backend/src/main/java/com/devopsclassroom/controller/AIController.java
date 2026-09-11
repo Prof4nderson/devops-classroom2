@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/ai")
+@RequestMapping("/api/rag")
 public class AIController {
 
     private final AIAgentService aiAgentService;
@@ -18,7 +18,7 @@ public class AIController {
         this.aiAgentService = aiAgentService;
     }
 
-    @PostMapping("/coder")
+    @PostMapping("/chat")
     public ResponseEntity<Map<String, String>> chamarCoder(@Valid @RequestBody AIChatRequest request) {
         String resposta = aiAgentService.responder(request.getMensagem());
         return ResponseEntity.ok(Map.of(
