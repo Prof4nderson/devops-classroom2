@@ -18,9 +18,9 @@ public class AIController {
         this.aiAgentService = aiAgentService;
     }
 
-    @PostMapping(value = "/chat", consumes = "text/plain")
-    public ResponseEntity<Map<String, String>> chamarCoder(@RequestBody String mensagem) {
-        String resposta = aiAgentService.responder(mensagem);
+    @PostMapping("/chat")
+    public ResponseEntity<Map<String, String>> chamarCoder(@Valid @RequestBody AIChatRequest request) {
+        String resposta = aiAgentService.responder(request.getMensagem());
         return ResponseEntity.ok(Map.of(
                 "resposta", resposta,
                 "assistente", "Coder"

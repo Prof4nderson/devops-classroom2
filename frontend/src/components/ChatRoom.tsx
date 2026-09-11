@@ -227,10 +227,11 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ aula, user, onLeave }) => {
       try {
         const perguntaLimpa = textoEnviar.replace(/@coder/gi, '').trim();
 
-        await api.post('/api/rag/chat', perguntaLimpa, {
-          params: { sessionId: `aula-${aula.id}` },
-          headers: { 'Content-Type': 'text/plain' },
-        });
+       await api.post('/api/rag/chat', {
+    mensagem: perguntaLimpa
+}, {
+    params: { sessionId: aula.id }
+});
       } catch (error) {
         console.error('Erro ao consultar o agente @Coder:', error);
         toast.error('O agente @Coder não conseguiu responder no momento.');
