@@ -301,7 +301,7 @@ const DashboardView: React.FC = () => {
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <h1 className="text-xl md:text-2xl font-bold title-glow">
-              {currentPage === 'dashboard' && 'Dashboard'}
+              {currentPage === 'dashboard' && 'Matérias e Aulas'}
               {currentPage === 'cursos' && 'Cursos'}
               {currentPage === 'alunos' && 'Alunos'}
               {currentPage === 'downloads' && 'Downloads'}
