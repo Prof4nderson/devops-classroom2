@@ -229,7 +229,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ aula, user, onLeave }) => {
 
         await api.post('/api/rag/chat', perguntaLimpa, {
           params: { sessionId: `aula-${aula.id}` },
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'text/plain' },
         });
       } catch (error) {
         console.error('Erro ao consultar o agente @Coder:', error);
