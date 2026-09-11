@@ -29,7 +29,7 @@ const LoginForm: React.FC = () => {
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl glass mb-4">
             <Terminal className="w-8 h-8 neon" />
           </div>
-          <h1 className="text-3xl font-bold title-glow">DevOps Classroom</h1>
+          <h1 className="text-3xl font-bold title-glow">TI Classroom</h1>
           <p className="txt-dim mt-2 text-sm">Gerenciamento inteligente de aulas</p>
         </div>
 

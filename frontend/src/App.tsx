@@ -148,7 +148,7 @@ const DashboardView: React.FC = () => {
       <div className="md:hidden flex items-center justify-between p-4 glass-bar border-b divider z-50">
         <div className="flex items-center gap-2">
           <Terminal className="w-6 h-6 neon" />
-          <span className="font-bold title-glow">DevOps Classroom</span>
+          <span className="font-bold title-glow">TI Classroom</span>
         </div>
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -168,7 +168,7 @@ const DashboardView: React.FC = () => {
         <div>
           <div className="hidden md:flex p-4 border-b divider items-center gap-2">
             <Terminal className="w-6 h-6 neon" />
-            <span className="font-bold title-glow">DevOps Classroom</span>
+            <span className="font-bold title-glow">TI Classroom</span>
           </div>
 
           <nav className="p-3 space-y-1.5 mt-14 md:mt-0">

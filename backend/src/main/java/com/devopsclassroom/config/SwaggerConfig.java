@@ -15,9 +15,9 @@ public class SwaggerConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("DevOps Classroom API")
+                        .title("TI Classroom API")
                         .version("1.0")
-                        .description("Documentação das APIs do sistema DevOps Classroom"))
+                        .description("Documentação das APIs do sistema TI Classroom"))
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
                 .components(new Components()
                         .addSecuritySchemes("bearerAuth",

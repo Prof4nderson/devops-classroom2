@@ -102,7 +102,7 @@ const RegisterForm: React.FC = () => {
             <Terminal className="w-8 h-8 neon-violet" />
           </div>
           <h1 className="text-3xl font-bold title-glow">Criar Conta</h1>
-          <p className="txt-dim mt-2 text-sm">Junte-se ao DevOps Classroom</p>
+          <p className="txt-dim mt-2 text-sm">Junte-se ao TI Classroom</p>
         </div>
 
         <form onSubmit={handleSubmit} className="card space-y-4">

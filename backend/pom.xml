@@ -14,7 +14,7 @@
     <groupId>com.devopsclassroom</groupId>
     <artifactId>devops-classroom-backend</artifactId>
     <version>1.0.0</version>
-    <name>DevOps Classroom Backend</name>
+    <name>TI Classroom Backend</name>
     <description>Gerenciamento de aulas de DevOps com chat em tempo real e IA</description>
 
     <properties>
