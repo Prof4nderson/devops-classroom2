@@ -177,7 +177,7 @@ const DashboardView: React.FC = () => {
               className={`nav-item w-full ${currentPage === 'dashboard' ? 'nav-item-active' : ''}`}
             >
               <LayoutDashboard className="w-4 h-4" />
-              Dashboard
+              Matérias e Aulas
             </button>
 
             <button
