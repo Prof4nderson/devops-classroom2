@@ -228,7 +228,8 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ aula, user, onLeave }) => {
         const perguntaLimpa = textoEnviar.replace(/@coder/gi, '').trim();
 
        await api.post('/api/rag/chat', {
-    mensagem: perguntaLimpa
+    mensagem: perguntaLimpa,
+    aulaId: aula.id,
 }, {
     params: { sessionId: aula.id }
 });
