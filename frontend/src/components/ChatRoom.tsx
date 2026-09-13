@@ -3,8 +3,9 @@ import { ChatWebSocket } from '../services/websocket';
 import { ChatMessage, Aula, Usuario } from '../types';
 import {
   Send, Image, Code, Bot, Users, Clock, Trophy, LogOut, Reply, X,
-  PlayCircle, StopCircle, BookOpen,
+  PlayCircle, StopCircle, BookOpen, Megaphone,
 } from 'lucide-react';
+import DirectToast from './DirectToast';
 import toast from 'react-hot-toast';
 import api from '../services/api';
 
@@ -20,6 +21,7 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ aula, user, onLeave }) => {
   const [inputText, setInputText] = useState('');
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [presentes, setPresentes] = useState<Record<number, string>>({});
+  const [recadoPara, setRecadoPara] = useState<{ id: number; nome: string } | null>(null);
   const [showCodeEditor, setShowCodeEditor] = useState(false);
   const [codeText, setCodeText] = useState('');
   const [codeLanguage, setCodeLanguage] = useState('bash');
@@ -162,7 +164,14 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ aula, user, onLeave }) => {
           return [...prev, newMsg];
         }),
       handlePresence,
-      handleQuiz
+      handleQuiz,
+      (recado) => {
+        const texto = recado?.mensagem || 'Você recebeu um recado do professor';
+        const de = recado?.deNome ? `${recado.deNome}: ` : '';
+        if (recado?.tom === 'ELOGIO') toast.success(`${de}${texto}`, { duration: 8000, icon: '🌟' });
+        else if (recado?.tom === 'ATENCAO') toast(`${de}${texto}`, { duration: 9000, icon: '⚠️' });
+        else toast(`${de}${texto}`, { duration: 8000, icon: '📩' });
+      }
     );
 
     wsRef.current = ws;
@@ -414,8 +423,18 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ aula, user, onLeave }) => {
     }
   };
 
+  const isProfessor = user.tipo === 'PROFESSOR' || user.tipo === 'ADMIN';
+
   return (
     <div className="flex h-screen">
+      {recadoPara && (
+        <DirectToast
+          aulaId={aula.id as number}
+          alunoId={recadoPara.id}
+          alunoNome={recadoPara.nome}
+          onClose={() => setRecadoPara(null)}
+        />
+      )}
       {/* Sidebar - Presentes */}
       <div className="w-64 glass-bar border-r flex flex-col">
         <div className="p-4 border-b divider">
@@ -433,6 +452,16 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ aula, user, onLeave }) => {
               <div className="dot-live animate-pulse" />
               <span className="text-sm txt-dim truncate">{nome}</span>
               {parseInt(id) === user.id && <span className="text-xs neon ml-auto">(você)</span>}
+              {isProfessor && parseInt(id) !== user.id && (
+                <button
+                  className="icon-btn !p-1 ml-auto"
+                  title={`Enviar recado para ${nome}`}
+                  aria-label={`Enviar recado para ${nome}`}
+                  onClick={() => setRecadoPara({ id: parseInt(id), nome: String(nome) })}
+                >
+                  <Megaphone className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           ))}
           {Object.keys(presentes).length === 0 && (

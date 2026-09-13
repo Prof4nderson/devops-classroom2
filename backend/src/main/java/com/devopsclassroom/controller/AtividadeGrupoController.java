@@ -28,15 +28,18 @@ public class AtividadeGrupoController {
     private final TurmaRepository turmas;
     private final UsuarioRepository usuarios;
     private final MatriculaRepository matriculas;
+    private final ConclusaoTarefaRepository conclusoes;
     private final ObjectMapper mapper = new ObjectMapper();
 
     public AtividadeGrupoController(TrabalhoRepository trabalhos, EquipeRepository equipes, TurmaRepository turmas,
-                                    UsuarioRepository usuarios, MatriculaRepository matriculas) {
+                                    UsuarioRepository usuarios, MatriculaRepository matriculas,
+                                    ConclusaoTarefaRepository conclusoes) {
         this.trabalhos = trabalhos;
         this.equipes = equipes;
         this.turmas = turmas;
         this.usuarios = usuarios;
         this.matriculas = matriculas;
+        this.conclusoes = conclusoes;
     }
 
     // ------------------------------------------------------------- helpers
@@ -96,17 +99,49 @@ public class AtividadeGrupoController {
         m.put("tarefas", tarefasDe(t));
         m.put("participantes", t.getParticipantes().stream().map(this::aluno).toList());
 
+        List<ConclusaoTarefa> marcas = conclusoes.findByTrabalhoId(t.getId());
+
         List<Map<String, Object>> grupos = new ArrayList<>();
         for (Equipe e : equipes.findByTrabalhoId(t.getId())) {
             Map<String, Object> g = new LinkedHashMap<>();
             g.put("id", e.getId());
             g.put("nome", e.getNome());
             g.put("integrantes", e.getAlunos().stream().map(this::aluno).toList());
+            g.put("concluidas", marcas.stream()
+                    .filter(c -> c.getEquipe() != null && c.getEquipe().getId().equals(e.getId()))
+                    .map(this::marca).toList());
             grupos.add(g);
         }
         grupos.sort(Comparator.comparing(g -> String.valueOf(g.get("nome"))));
         m.put("grupos", grupos);
+        m.put("concluidasSemGrupo", conclusoes.findByTrabalhoId(t.getId()).stream()
+                .filter(c -> c.getEquipe() == null).map(this::marca).toList());
         return m;
+    }
+
+    private Map<String, Object> marca(ConclusaoTarefa c) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("indice", c.getIndiceTarefa());
+        m.put("alunoId", c.getAluno() != null ? c.getAluno().getId() : null);
+        m.put("alunoNome", c.getAluno() != null
+                ? (c.getAluno().getNome() != null ? c.getAluno().getNome() : c.getAluno().getLogin()) : null);
+        m.put("concluidoEm", c.getConcluidoEm() != null ? c.getConcluidoEm().toString() : null);
+        return m;
+    }
+
+    /** Equipe do aluno dentro da atividade (nula quando ainda não houve sorteio). */
+    private Equipe equipeDoAluno(Trabalho t, Usuario aluno) {
+        return equipes.findByTrabalhoId(t.getId()).stream()
+                .filter(e -> e.getAlunos().stream().anyMatch(a -> a.getId().equals(aluno.getId())))
+                .findFirst().orElse(null);
+    }
+
+    private void exigirParticipante(Trabalho t, Usuario aluno) {
+        boolean participa = t.getParticipantes().stream().anyMatch(p -> p.getId().equals(aluno.getId()))
+                || equipeDoAluno(t, aluno) != null;
+        if (!participa) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Você não participa desta atividade");
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -217,8 +252,82 @@ public class AtividadeGrupoController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> excluir(@PathVariable Long id, Authentication auth) {
         professor(auth);
+        conclusoes.deleteByTrabalhoId(id);
         equipes.deleteByTrabalhoId(id);
         trabalhos.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // --------------------------------------------------- tarefas do aluno
+
+    /** Atividades em grupo em que o usuário autenticado participa, com o progresso da sua equipe. */
+    @GetMapping("/minhas")
+    public ResponseEntity<List<Map<String, Object>>> minhas(Authentication auth) {
+        Usuario user = autenticado(auth);
+
+        List<Map<String, Object>> saida = new ArrayList<>();
+        for (Trabalho t : trabalhos.findAll()) {
+            if (!t.isTrabalhoEquipe()) continue;
+            Equipe equipe = equipeDoAluno(t, user);
+            boolean participante = t.getParticipantes().stream().anyMatch(p -> p.getId().equals(user.getId()));
+            if (equipe == null && !participante) continue;
+
+            Map<String, Object> m = new LinkedHashMap<>(mapear(t));
+            m.put("minhaEquipeId", equipe != null ? equipe.getId() : null);
+            m.put("minhaEquipeNome", equipe != null ? equipe.getNome() : null);
+            m.put("colegas", equipe != null
+                    ? equipe.getAlunos().stream().filter(a -> !a.getId().equals(user.getId())).map(this::aluno).toList()
+                    : List.of());
+
+            Long equipeId = equipe != null ? equipe.getId() : null;
+            m.put("minhasConcluidas", conclusoes.findByTrabalhoId(t.getId()).stream()
+                    .filter(c -> equipeId == null
+                            ? c.getEquipe() == null
+                            : (c.getEquipe() != null && c.getEquipe().getId().equals(equipeId)))
+                    .map(this::marca).toList());
+            saida.add(m);
+        }
+        saida.sort(Comparator.comparing(m -> String.valueOf(m.get("titulo"))));
+        return ResponseEntity.ok(saida);
+    }
+
+    @PostMapping("/{id}/tarefas/{indice}/concluir")
+    public ResponseEntity<Map<String, Object>> concluirTarefa(@PathVariable Long id, @PathVariable Integer indice,
+                                                              Authentication auth) {
+        Usuario user = autenticado(auth);
+        Trabalho t = trabalhos.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Atividade não encontrada"));
+        exigirParticipante(t, user);
+        if (indice == null || indice < 0 || indice >= tarefasDe(t).size()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tarefa inexistente");
+        }
+
+        Equipe equipe = equipeDoAluno(t, user);
+        Optional<ConclusaoTarefa> existente = equipe == null
+                ? conclusoes.findByTrabalhoIdAndEquipeIsNullAndIndiceTarefa(id, indice)
+                : conclusoes.findByTrabalhoIdAndEquipeIdAndIndiceTarefa(id, equipe.getId(), indice);
+
+        ConclusaoTarefa c = existente.orElseGet(ConclusaoTarefa::new);
+        c.setTrabalho(t);
+        c.setEquipe(equipe);
+        c.setIndiceTarefa(indice);
+        c.setAluno(user);
+        return ResponseEntity.ok(marca(conclusoes.save(c)));
+    }
+
+    @DeleteMapping("/{id}/tarefas/{indice}/concluir")
+    public ResponseEntity<Void> desmarcarTarefa(@PathVariable Long id, @PathVariable Integer indice,
+                                                Authentication auth) {
+        Usuario user = autenticado(auth);
+        Trabalho t = trabalhos.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Atividade não encontrada"));
+        exigirParticipante(t, user);
+
+        Equipe equipe = equipeDoAluno(t, user);
+        Optional<ConclusaoTarefa> existente = equipe == null
+                ? conclusoes.findByTrabalhoIdAndEquipeIsNullAndIndiceTarefa(id, indice)
+                : conclusoes.findByTrabalhoIdAndEquipeIdAndIndiceTarefa(id, equipe.getId(), indice);
+        existente.ifPresent(conclusoes::delete);
         return ResponseEntity.noContent().build();
     }
 
@@ -252,6 +361,7 @@ public class AtividadeGrupoController {
         }
         if (totalGrupos < 1) totalGrupos = 1;
 
+        conclusoes.deleteByTrabalhoId(id);
         equipes.deleteByTrabalhoId(id);
         equipes.flush();
 

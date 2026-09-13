@@ -117,6 +117,44 @@ public class AulaService {
         }
     }
 
+    private LocalDateTime parseData(String data) {
+        if (data == null || data.isBlank()) return null;
+        return LocalDateTime.parse(data.length() == 16 ? data + ":00" : data);
+    }
+
+    /** Atualiza uma aula planejada (planner do professor). */
+    @Transactional
+    public Aula atualizarAula(Long id, AulaRequest request) {
+        Aula aula = buscarAula(id);
+        if (request.getCursoId() != null) {
+            aula.setCurso(cursoRepository.findById(request.getCursoId())
+                    .orElseThrow(() -> new RuntimeException("Curso não encontrado")));
+        }
+        if (request.getTurmaId() != null) {
+            aula.setTurma(turmaRepository.findById(request.getTurmaId())
+                    .orElseThrow(() -> new RuntimeException("Turma não encontrada")));
+        }
+        if (request.getTitulo() != null) aula.setTitulo(request.getTitulo());
+        aula.setDescricao(request.getDescricao());
+        LocalDateTime data = parseData(request.getDataAula());
+        if (data != null) aula.setDataAula(data);
+        if (request.getDuracao() != null) aula.setDuracao(request.getDuracao());
+        if (request.getStatus() != null && !request.getStatus().isBlank()) {
+            aula.setStatus(StatusAula.valueOf(request.getStatus().toUpperCase()));
+        }
+        return aulaRepository.save(aula);
+    }
+
+    @Transactional
+    public void excluirAula(Long id) {
+        aulaRepository.deleteById(id);
+    }
+
+    /** Aulas de um intervalo (calendário). Aulas sem data não entram na agenda. */
+    public List<Aula> listarAgenda(LocalDateTime inicio, LocalDateTime fim) {
+        return aulaRepository.findByDataAulaBetweenOrderByDataAulaAsc(inicio, fim);
+    }
+
     public List<Aula> listarAulasEmAndamento() {
         return aulaRepository.findByStatus(StatusAula.EM_ANDAMENTO);
     }

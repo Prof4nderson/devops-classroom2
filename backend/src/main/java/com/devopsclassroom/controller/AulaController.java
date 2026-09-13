@@ -58,6 +58,36 @@ public class AulaController {
         return ResponseEntity.ok(aula);
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<Aula> atualizarAula(@PathVariable Long id, @RequestBody AulaRequest request, Authentication auth) {
+        exigirProfessor(auth);
+        return ResponseEntity.ok(aulaService.atualizarAula(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> excluirAula(@PathVariable Long id, Authentication auth) {
+        exigirProfessor(auth);
+        aulaService.excluirAula(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Agenda do planner: professor vê tudo; aluno vê apenas as turmas em que está matriculado. */
+    @GetMapping("/agenda")
+    public ResponseEntity<List<Aula>> agenda(@RequestParam String inicio, @RequestParam String fim, Authentication auth) {
+        java.time.LocalDateTime de = java.time.LocalDateTime.parse(inicio.length() == 10 ? inicio + "T00:00:00" : inicio);
+        java.time.LocalDateTime ate = java.time.LocalDateTime.parse(fim.length() == 10 ? fim + "T23:59:59" : fim);
+        List<Aula> aulas = aulaService.listarAgenda(de, ate);
+
+        Usuario usuario = (Usuario) auth.getPrincipal();
+        if (usuario.getTipo() == com.devopsclassroom.entity.TipoUsuario.ALUNO) {
+            aulas = aulas.stream()
+                    .filter(a -> a.getTurma() == null || matriculaRepository.existsByUsuarioIdAndTurmaIdAndStatus(
+                            usuario.getId(), a.getTurma().getId(), StatusMatricula.ATIVA))
+                    .toList();
+        }
+        return ResponseEntity.ok(aulas);
+    }
+
     @GetMapping("/curso/{cursoId}")
     public ResponseEntity<List<Aula>> listarAulasDoCurso(@PathVariable Long cursoId) {
         return ResponseEntity.ok(aulaService.listarAulasPorCurso(cursoId));

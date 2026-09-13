@@ -9,18 +9,21 @@ export class ChatWebSocket {
   private onMessage: (msg: ChatMessage) => void;
   private onPresence: (data: PresenceUpdate) => void;
   private onQuiz: (data: any) => void;
+  private onRecado?: (data: any) => void;
   private isConnecting: boolean = false;
 
   constructor(
     aulaId: number,
     onMessage: (msg: ChatMessage) => void,
     onPresence: (data: PresenceUpdate) => void,
-    onQuiz: (data: any) => void
+    onQuiz: (data: any) => void,
+    onRecado?: (data: any) => void
   ) {
     this.aulaId = aulaId;
     this.onMessage = onMessage;
     this.onPresence = onPresence;
     this.onQuiz = onQuiz;
+    this.onRecado = onRecado;
   }
 
   connect() {
@@ -63,6 +66,12 @@ export class ChatWebSocket {
         this.stompClient.subscribe(`/topic/quiz/${this.aulaId}`, (message) => {
           if (message.body) {
             this.onQuiz(JSON.parse(message.body));
+          }
+        });
+
+        this.stompClient.subscribe('/user/queue/avisos', (message) => {
+          if (message.body && this.onRecado) {
+            this.onRecado(JSON.parse(message.body));
           }
         });
 

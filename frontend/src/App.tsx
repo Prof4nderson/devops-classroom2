@@ -9,7 +9,10 @@ import api from './services/api';
 import AdminPanel from './components/AdminPanel';
 import GroupActivities from './components/GroupActivities';
 import Diario from './components/Diario';
-import ThemeSwitcher, { aplicarTemaSalvo } from './components/ThemeSwitcher';
+import UxBadge from './components/UxBadge';
+import LessonPlanner from './components/LessonPlanner';
+import MyTasks from './components/MyTasks';
+import NoticeBoard from './components/NoticeBoard';
 import {
   LayoutDashboard,
   Users,
@@ -35,9 +38,11 @@ import {
   Settings,
   UsersRound,
   BookMarked,
+  CalendarDays,
+  ListChecks,
 } from 'lucide-react';
 
-type Page = 'dashboard' | 'cursos' | 'alunos' | 'downloads' | 'artigos' | 'atividades' | 'grupos' | 'admin' | 'diario' | 'aula';
+type Page = 'dashboard' | 'planner' | 'tarefas' | 'cursos' | 'alunos' | 'downloads' | 'artigos' | 'atividades' | 'grupos' | 'admin' | 'diario' | 'aula';
 type DownloadItem = { id: string; titulo: string; descricao: string; tipo: string; tamanho: string; arquivo: string };
 type Trilha = { id: string; titulo: string; descricao: string; nivel: string; duracao: string; itens: string[] };
 type Artigo = { id: string; titulo: string; resumo: string; categoria: string; autor: string; leitura: string; tags: string[]; link?: string };
@@ -161,7 +166,7 @@ const DashboardView: React.FC = () => {
       {/* 💻 SIDEBAR */}
       <aside
         className={`
-          fixed md:static inset-y-0 left-0 z-40 w-64 glass-bar border-r flex flex-col justify-between transition-transform duration-300 ease-in-out bg-zinc-950/95 md:bg-transparent
+          fixed md:static inset-y-0 left-0 z-40 w-64 glass-bar sidebar-mobile border-r flex flex-col justify-between transition-transform duration-300 ease-in-out
           ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}
       >
@@ -179,6 +184,24 @@ const DashboardView: React.FC = () => {
               <LayoutDashboard className="w-4 h-4" />
               Matérias e Aulas
             </button>
+
+            <button
+              onClick={() => { setCurrentPage('planner'); setIsMobileMenuOpen(false); }}
+              className={`nav-item w-full ${currentPage === 'planner' ? 'nav-item-active' : ''}`}
+            >
+              <CalendarDays className="w-4 h-4" />
+              {user.tipo === 'ALUNO' ? 'Calendário de aulas' : 'Planner de aulas'}
+            </button>
+
+            {user.tipo === 'ALUNO' && (
+              <button
+                onClick={() => { setCurrentPage('tarefas'); setIsMobileMenuOpen(false); }}
+                className={`nav-item w-full ${currentPage === 'tarefas' ? 'nav-item-active' : ''}`}
+              >
+                <ListChecks className="w-4 h-4" />
+                Minhas tarefas
+              </button>
+            )}
 
             <button
               onClick={() => { setCurrentPage('cursos'); setIsMobileMenuOpen(false); }}
@@ -302,6 +325,8 @@ const DashboardView: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <h1 className="text-xl md:text-2xl font-bold title-glow">
               {currentPage === 'dashboard' && 'Matérias e Aulas'}
+              {currentPage === 'planner' && (user.tipo === 'ALUNO' ? 'Calendário de aulas' : 'Planner de aulas')}
+              {currentPage === 'tarefas' && 'Minhas tarefas'}
               {currentPage === 'cursos' && 'Cursos'}
               {currentPage === 'alunos' && 'Alunos'}
               {currentPage === 'downloads' && 'Downloads'}
@@ -312,7 +337,6 @@ const DashboardView: React.FC = () => {
               {currentPage === 'diario' && (user.tipo === 'ALUNO' ? 'Meu boletim' : 'Diário de classe')}
             </h1>
             <div className="flex items-center gap-3">
-              <ThemeSwitcher />
               <span className="text-xs md:text-sm txt-dim">
               {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
               </span>
@@ -321,6 +345,15 @@ const DashboardView: React.FC = () => {
         </header>
 
         <main className="p-4 md:p-6">
+          {currentPage === 'planner' && (
+            <LessonPlanner
+              isProfessor={user.tipo === 'PROFESSOR' || user.tipo === 'ADMIN'}
+              onAbrirAula={(id) => iniciarAula(id)}
+            />
+          )}
+
+          {currentPage === 'tarefas' && user.tipo === 'ALUNO' && <MyTasks />}
+
           {currentPage === 'admin' && (user.tipo === 'PROFESSOR' || user.tipo === 'ADMIN') && <AdminPanel />}
 
           {currentPage === 'diario' && (
@@ -409,6 +442,8 @@ const DashboardView: React.FC = () => {
 
           {currentPage === 'dashboard' && (
             <div className="space-y-6">
+              <NoticeBoard isProfessor={user.tipo === 'PROFESSOR' || user.tipo === 'ADMIN'} />
+
               <section className="mb-8">
                 <div className="flex items-center justify-between mb-4">
                   <div>
@@ -534,13 +569,13 @@ const DashboardView: React.FC = () => {
           )}
         </main>
       </div>
+
+      <UxBadge />
     </div>
   );
 };
 
 // Gerenciador de Rotas Principal
-aplicarTemaSalvo();
-
 function App() {
   const { user, loading } = useAuth();
 
